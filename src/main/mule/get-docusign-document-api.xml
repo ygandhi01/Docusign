@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<flow name="get-docusign-document-apiFlow" doc:id="124384c2-9caa-443b-903f-bc61ae69df44" >
+		<http:listener doc:name="Listener" doc:id="c28738a5-1307-4ac3-ae90-c82291c34e18" path="/api" config-ref="HTTPS_Listener_config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="b445d014-f56b-43e4-bfc3-44c92c3d0683" message="document fetched"/>
+		<ee:transform doc:name="Transform Message" doc:id="13da9f0b-3d8c-495a-9122-0356739679e3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="ab8aa3cc-9231-4c75-825b-d67a7c5cc5a5" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message:RequestToCreateVersion" doc:id="6ed8654d-bd4b-4ff8-89dc-9114ff81c666">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+import * from dw::core::Binaries
+output application/java
+---
+{
+	Title: 'OrderInvoice',
+	PathOnClient: 'pdfSample.pdf',
+	VersionData: payload.DocuSignEnvelopeInformation.DocumentPDFs.DocumentPDF.PDFBytes,
+	ContentLocation: 'S'
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create-single type="ContentVersion" doc:name="CreateContentVersion" doc:id="b4f6b980-25f8-4005-9c27-0cc1c993032e" config-ref="Salesforce_Configuration"/>
+		<ee:transform doc:name="Transform Message:PayloadToJava" doc:id="ad6ee50a-4d18-4601-8dbe-3b45467402a4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	ContentVersionID: payload.id,
+	status: payload.success
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger:ContentVersionDetails" doc:id="a0149a7b-707f-4679-8d8a-d72baab4f44b" message="#[payload]"/>
+		<salesforce:query-single doc:name="Query:GetContentDocumentID" doc:id="972d47c0-3559-43d3-af9a-7c36773adf1c" config-ref="Salesforce_Configuration">
+			<salesforce:salesforce-query >SELECT ContentDocumentId 
+FROM ContentVersion 
+WHERE Id = ':Id'</salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	Id : payload.ContentVersionID
+}]]]></salesforce:parameters>
+		</salesforce:query-single>
+		<ee:transform doc:name="Transform Message:PayloadToJava" doc:id="1bc19e23-3c04-4c8c-a18b-827d6ba8bb87" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger:ContentDocumentId" doc:id="0d4b7474-f9d3-4819-a179-65589f7c1f0f" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message:RequestToContentDocumentLink" doc:id="ec8bc4dc-d15e-44ef-96a9-053871297d38" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	LinkedEntityId: '0062v00001DQpi1',
+	ContentDocumentId: payload.ContentDocumentId,
+	ShareType: 'V'
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger:RequestToContentDocumentLink" doc:id="0a982d28-a607-45aa-a664-0bc30623a209" message="#[payload]"/>
+		<salesforce:create-single doc:name="CreateContentDocumentLink" doc:id="63756213-530c-45cd-bac1-d3f6e46971f8" type="ContentDocumentLink" config-ref="Salesforce_Configuration"/>
+		<logger level="INFO" doc:name="Logger: Flow Completed Succefully" doc:id="1b5cb8bc-449a-448c-9dbf-a0df5d4e6a84" message="#[payload]"/>
+		
+		<logger level="INFO" doc:name="Logger" doc:id="672ce98b-27d2-47f6-be2d-f042994b8032" message="document fetched succesfully"/>
+	</flow>
+</mule>

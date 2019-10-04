@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<salesforce:sfdc-config name="Salesforce_Configuration" doc:name="Salesforce Config" doc:id="59ab98c1-2811-4a3a-a9d9-c2adaec0d0cb" >
+		<salesforce:cached-basic-connection username="monikapaygude@deloitte.com" password="monika@12" securityToken="Hpd4j5BENzprQnpQ9HsOJGM5"/>
+	</salesforce:sfdc-config>
+	<http:listener-config name="HTTPS_Listener_config" doc:name="HTTP Listener config" doc:id="66c8a9be-97e2-4869-997b-e388f968e11c" >
+		<http:listener-connection host="0.0.0.0" port="8082" protocol="HTTPS">
+			<tls:context >
+				<tls:key-store type="jks" path="keystore/keystore.jks" alias="mule" keyPassword="MuleSoft123!" password="MuleSoft123!"/>
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	
+</mule>
